@@ -1,0 +1,7 @@
+README.md
+setup.py
+whisperscraper.egg-info/PKG-INFO
+whisperscraper.egg-info/SOURCES.txt
+whisperscraper.egg-info/dependency_links.txt
+whisperscraper.egg-info/requires.txt
+whisperscraper.egg-info/top_level.txt
