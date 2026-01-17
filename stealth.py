@@ -55,3 +55,63 @@ async def stealth_mask_webdriver(page):
             get: () => undefined
         });
     """)
+
+async def stealth_spoof_canvas(page):
+    """
+    Injects a script to add random noise to HTML5 Canvas readouts.
+    This prevents consistent canvas fingerprinting.
+    """
+    await page.add_init_script("""
+        const toBlob = HTMLCanvasElement.prototype.toBlob;
+        const toDataURL = HTMLCanvasElement.prototype.toDataURL;
+        const getImageData = CanvasRenderingContext2D.prototype.getImageData;
+        
+        // Generate a random noise value for this session
+        const noise = {
+            r: Math.floor(Math.random() * 10) - 5,
+            g: Math.floor(Math.random() * 10) - 5,
+            b: Math.floor(Math.random() * 10) - 5,
+            a: Math.floor(Math.random() * 10) - 5
+        };
+
+        const shift = function(context, width, height) {
+            const imageData = getImageData.call(context, 0, 0, width, height);
+            for (let i = 0; i < height; i++) {
+                for (let j = 0; j < width; j++) {
+                    const index = ((i * (width * 4)) + (j * 4));
+                    imageData.data[index] = imageData.data[index] + noise.r;
+                    imageData.data[index + 1] = imageData.data[index + 1] + noise.g;
+                    imageData.data[index + 2] = imageData.data[index + 2] + noise.b;
+                    imageData.data[index + 3] = imageData.data[index + 3] + noise.a;
+                }
+            }
+            context.putImageData(imageData, 0, 0);
+        };
+
+        HTMLCanvasElement.prototype.toBlob = function() {
+            shift(this.getContext('2d'), this.width, this.height);
+            return toBlob.apply(this, arguments);
+        };
+
+        HTMLCanvasElement.prototype.toDataURL = function() {
+            shift(this.getContext('2d'), this.width, this.height);
+            return toDataURL.apply(this, arguments);
+        };
+    """)
+
+async def stealth_spoof_audio(page):
+    """
+    Injects a script to add random noise to AudioContext readouts.
+    """
+    await page.add_init_script("""
+        const getChannelData = AudioBuffer.prototype.getChannelData;
+        
+        AudioBuffer.prototype.getChannelData = function() {
+            const results = getChannelData.apply(this, arguments);
+            for (let i = 0; i < results.length; i += 100) {
+                // Add tiny random noise every 100 samples
+                results[i] += (Math.random() * 0.0001);
+            }
+            return results;
+        };
+    """)
